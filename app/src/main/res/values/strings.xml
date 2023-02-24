@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Youify</string>
+    <string name="enter_url">Enter your playlist URL</string>
+    <string name="youify_playlist">Youify your playlist</string>
+    <string name="google_icon">Google Icon</string>
+    <string name="client_id">629936952678-lbq4hkcn2p14r38844pa65d21rspuaie.apps.googleusercontent.com</string>
 </resources>
