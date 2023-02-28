@@ -1,23 +1,22 @@
 package com.asanme.youify.model.auth
 
+import android.content.Context
+import android.content.Intent
 import androidx.core.net.toUri
-import net.openid.appauth.AuthorizationRequest
-import net.openid.appauth.AuthorizationServiceConfiguration
-import net.openid.appauth.AuthorizationServiceDiscovery
-import net.openid.appauth.ResponseTypeValues
+import net.openid.appauth.*
 import org.json.JSONObject
 
 
 class AuthController(
     private val auth_config: String
 ) {
-    private val MY_REDIRECT_URI =
+    private val redirectURI =
         "com.asanme.youify:/oauth2redirect"
 
-    private val MY_CLIENT_ID: String =
+    private val clientId: String =
         "629936952678-lbq4hkcn2p14r38844pa65d21rspuaie.apps.googleusercontent.com"
 
-    fun getAuthorizationRequest(): AuthorizationRequest {
+    private fun getAuthorizationRequest(): AuthorizationRequest {
         val serviceConfig = AuthorizationServiceConfiguration(
             AuthorizationServiceDiscovery(
                 JSONObject(auth_config)
@@ -26,9 +25,15 @@ class AuthController(
 
         return AuthorizationRequest.Builder(
             serviceConfig,
-            MY_CLIENT_ID,
+            clientId,
             ResponseTypeValues.CODE,
-            MY_REDIRECT_URI.toUri()
+            redirectURI.toUri()
         ).setScope("https://www.googleapis.com/auth/youtube").build()
+    }
+
+    fun getAuthIntent(context: Context): Intent {
+        val authRequest = AuthController(auth_config).getAuthorizationRequest()
+        val authService = AuthorizationService(context)
+        return authService.getAuthorizationRequestIntent(authRequest)
     }
 }
