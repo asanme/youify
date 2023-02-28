@@ -36,10 +36,11 @@ private fun App() {
     val authService = AuthorizationService(context)
     val authIntent: Intent = authService.getAuthorizationRequestIntent(authRequest)
 
+    // TODO Redirect upon recieving server response to authenticate
     val pendingIntent = PendingIntent.getActivity(
         context,
         1,
         authIntent,
         PendingIntent.FLAG_IMMUTABLE
-    ).send()
+    ).send() // This calls the Intent
 }
