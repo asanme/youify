@@ -1,7 +1,7 @@
 package com.asanme.youify.view
 
 import android.content.Context
-import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +20,8 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import com.asanme.youify.R
 import com.asanme.youify.model.auth.AuthController
 import net.openid.appauth.AuthorizationResponse
@@ -27,17 +29,41 @@ import net.openid.appauth.AuthorizationResponse
 @Composable
 fun SignInView() {
     val context = LocalContext.current
-    var text by remember {
-        mutableStateOf("default")
-    }
+    val authController = AuthController(context)
+    val authService by remember { mutableStateOf(authController.getAuthService()) }
+    val authIntent by remember { mutableStateOf(authController.getAuthIntent(authService)) }
 
+    var text by remember { mutableStateOf("default") }
+
+    // TODO Implement this inside a ViewModel
     val url = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = { response ->
-            response.data?.let { data ->
-                AuthorizationResponse.fromIntent(data)
-            }.run {
-                Log.e("NullResponse", "Error")
+            response.data?.let { intent ->
+                AuthorizationResponse.fromIntent(intent)?.let { authResponse ->
+                    authService.performTokenRequest(
+                        authResponse.createTokenExchangeRequest()
+                    ) { response, authException ->
+                        if (response != null) {
+                            response.refreshToken?.let { refreshToken ->
+                                response.accessToken?.let { accessToken ->
+                                    Log.i("RefreshToken", refreshToken)
+                                    Log.i("RefreshToken", accessToken)
+
+                                    checkEncryptedSharedPreferences(
+                                        context,
+                                        refreshToken,
+                                        accessToken
+                                    )
+                                }
+                            }
+                        } else {
+                            authException?.let {
+                                Log.e("RefreshTokenError", authException.stackTraceToString())
+                            }
+                        }
+                    }
+                }
             }
         }
     )
@@ -61,7 +87,7 @@ fun SignInView() {
 
         Button(
             onClick = {
-                url.launch(getAuthPermissions(context))
+                url.launch(authIntent)
             },
         ) {
             Row(
@@ -80,11 +106,28 @@ fun SignInView() {
     }
 }
 
-private fun getAuthPermissions(context: Context): Intent {
-    val jsonConfig =
-        context.resources.openRawResource(R.raw.auth_config).bufferedReader().use { it.readText() }
-    val authController = AuthController(jsonConfig)
-    return authController.getAuthIntent(context)
+private fun checkEncryptedSharedPreferences(
+    context: Context,
+    refreshToken: String,
+    accessToken: String
+) {
+    val keyGenParameterSpec = MasterKeys.AES256_GCM_SPEC
+    val mainKeyAlias = MasterKeys.getOrCreate(keyGenParameterSpec)
+    val sharedPrefsFile = "tokenKeys"
+
+    val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
+        sharedPrefsFile,
+        mainKeyAlias,
+        context,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    with(sharedPreferences.edit()) {
+        putString("refreshToken", refreshToken)
+        putString("accessToken", accessToken)
+        apply()
+    }
 }
 
 @Preview(
