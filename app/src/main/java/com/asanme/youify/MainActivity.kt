@@ -1,21 +1,23 @@
 package com.asanme.youify
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
-import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.Button
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.*
-import com.asanme.youify.model.auth.AuthController
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
+import com.asanme.youify.model.routes.Routes
 import com.asanme.youify.ui.theme.YouifyTheme
+import com.asanme.youify.view.HomeView
 import com.asanme.youify.view.SignInView
-import net.openid.appauth.AuthorizationService
+import com.asanme.youify.viewmodel.AuthViewModel
 
 
 class MainActivity : ComponentActivity() {
@@ -24,9 +26,51 @@ class MainActivity : ComponentActivity() {
         setContent {
             YouifyTheme {
                 Surface {
-                    SignInView()
+                    App()
                 }
             }
         }
     }
+}
+
+@Composable
+private fun App() {
+    val context = LocalContext.current
+    val navController = rememberNavController()
+    val authViewModel = AuthViewModel(
+        getSharedPreferences(context),
+        navController
+    )
+
+    NavHost(
+        navController = navController,
+        // TODO Check if keys are valid and working
+        startDestination = if (!authViewModel.tokenExists()) {
+            Routes.SignInViewRoute.route
+        } else {
+            Routes.HomeViewRoute.route
+        }
+    ) {
+        composable(Routes.SignInViewRoute.route) {
+            SignInView(authViewModel)
+        }
+
+        composable(Routes.HomeViewRoute.route) {
+            HomeView()
+        }
+    }
+}
+
+fun getSharedPreferences(context: Context): SharedPreferences {
+    val sharedPreferencesFilename = "secret"
+    val keyGenParameterSpec = MasterKeys.AES256_GCM_SPEC
+    val masterKeyAlias = MasterKeys.getOrCreate(keyGenParameterSpec)
+
+    return EncryptedSharedPreferences.create(
+        sharedPreferencesFilename,
+        masterKeyAlias,
+        context,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 }

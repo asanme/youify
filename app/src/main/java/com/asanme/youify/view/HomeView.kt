@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.asanme.youify.R
 
 @Composable
-fun MainView() {
+fun HomeView() {
     var url by rememberSaveable {
         mutableStateOf("")
     }
@@ -52,5 +52,5 @@ fun MainView() {
 )
 @Composable
 private fun preview() {
-    MainView()
+    HomeView()
 }
