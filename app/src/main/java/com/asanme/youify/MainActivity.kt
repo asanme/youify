@@ -13,11 +13,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import com.asanme.youify.model.RetrofitHelper
+import com.asanme.youify.model.api.YouTubeAPI
 import com.asanme.youify.model.routes.Routes
 import com.asanme.youify.ui.theme.YouifyTheme
 import com.asanme.youify.view.HomeView
 import com.asanme.youify.view.SignInView
 import com.asanme.youify.viewmodel.AuthViewModel
+import retrofit2.Retrofit
 
 
 class MainActivity : ComponentActivity() {
@@ -35,11 +38,13 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun App() {
+    val api = RetrofitHelper.getInstance().create(YouTubeAPI::class.java)
     val context = LocalContext.current
     val navController = rememberNavController()
     val authViewModel = AuthViewModel(
         getSharedPreferences(context),
-        navController
+        navController,
+        api
     )
 
     NavHost(
@@ -56,7 +61,7 @@ private fun App() {
         }
 
         composable(Routes.HomeViewRoute.route) {
-            HomeView()
+            HomeView(authViewModel)
         }
     }
 }

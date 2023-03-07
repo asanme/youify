@@ -6,20 +6,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import com.asanme.youify.R
+import com.asanme.youify.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
-fun HomeView() {
+fun HomeView(authViewModel: AuthViewModel) {
+    val coroutineScope = rememberCoroutineScope()
     var url by rememberSaveable {
         mutableStateOf("")
     }
@@ -39,7 +39,17 @@ fun HomeView() {
             }
         )
 
-        Button(onClick = {}) {
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    authViewModel.getVideoInfo(
+                        videoId = "lJDl4pYWuho",
+                        part = "snippet",
+                        fields = "items(snippet(title,categoryId),statistics)"
+                    )
+                }
+            }
+        ) {
             Text(stringResource(id = R.string.youify_playlist))
         }
     }
@@ -52,5 +62,4 @@ fun HomeView() {
 )
 @Composable
 private fun preview() {
-    HomeView()
 }

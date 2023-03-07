@@ -22,12 +22,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.asanme.youify.R
 import com.asanme.youify.getSharedPreferences
+import com.asanme.youify.model.RetrofitHelper
+import com.asanme.youify.model.api.YouTubeAPI
 import com.asanme.youify.model.auth.AuthController
 import com.asanme.youify.viewmodel.AuthViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
+import retrofit2.Retrofit
 
 @Composable
 fun SignInView(
@@ -132,7 +135,8 @@ private fun SignInPreview() {
     val authViewModel =
         AuthViewModel(
             getSharedPreferences(context),
-            NavHostController(LocalContext.current)
+            NavHostController(LocalContext.current),
+            RetrofitHelper.getInstance().create(YouTubeAPI::class.java)
         )
 
     SignInView(authViewModel)
