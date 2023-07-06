@@ -4,15 +4,18 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
 import com.asanme.youify.R
-import net.openid.appauth.*
+import net.openid.appauth.AuthorizationRequest
+import net.openid.appauth.AuthorizationService
+import net.openid.appauth.AuthorizationServiceConfiguration
+import net.openid.appauth.AuthorizationServiceDiscovery
+import net.openid.appauth.ResponseTypeValues
 import org.json.JSONObject
 
 
 class AuthController(
     private val context: Context
 ) {
-    private val redirectURI =
-        "com.asanme.youify:/oauth2redirect"
+    private val redirectURI = "com.asanme.youify:/oauth2redirect"
 
     private val clientId: String =
         "629936952678-lbq4hkcn2p14r38844pa65d21rspuaie.apps.googleusercontent.com"

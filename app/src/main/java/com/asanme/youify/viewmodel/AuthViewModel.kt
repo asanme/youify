@@ -9,6 +9,7 @@ import com.asanme.youify.model.api.YouTubeAPI
 import com.asanme.youify.model.routes.Routes
 import kotlinx.coroutines.launch
 import net.openid.appauth.TokenResponse
+import org.json.JSONObject
 
 class AuthViewModel(
     private val sharedPreferences: SharedPreferences,
@@ -46,19 +47,44 @@ class AuthViewModel(
         navController.navigate(route.route)
     }
 
+    suspend fun refreshAccessToken() {
+
+    }
+
     suspend fun getVideoInfo(
         videoId: String,
         part: String,
-        fields: String
+        fields: String,
     ) = viewModelScope.launch {
         try {
-            api.getPlaylists(videoId, part, fields).body().let { response ->
+            val accessToken = sharedPreferences
+                .getString("accessToken", null)
+                .orEmpty()
+
+            val header = "Bearer $accessToken"
+
+            val request = api.getPlaylists(videoId, part, fields, header)
+            request.body().let { response ->
                 response?.let {
-                    it.items[0].snippet.title
+                    Log.i("YouTubeResponse", it.items[0].snippet.title)
                 }
             }
-        } catch(err: Exception){
-            Log.e("RetrofitExecption", err.stackTraceToString())
+
+            request.errorBody().let { responseError ->
+                responseError?.let {
+                    try {
+                        val error = JSONObject(it.string())
+                        Log.e(
+                            "YouTubeError",
+                            error.getJSONObject("error").getString("status").lowercase()
+                        )
+                    } catch (error: Exception) {
+                        Log.e("DeserializationError", error.stackTraceToString())
+                    }
+                }
+            }
+        } catch (err: Exception) {
+            Log.e("RetrofitException", err.stackTraceToString())
         }
     }
 }

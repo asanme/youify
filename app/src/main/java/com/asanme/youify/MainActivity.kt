@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material.Surface
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
@@ -20,7 +20,6 @@ import com.asanme.youify.ui.theme.YouifyTheme
 import com.asanme.youify.view.HomeView
 import com.asanme.youify.view.SignInView
 import com.asanme.youify.viewmodel.AuthViewModel
-import retrofit2.Retrofit
 
 
 class MainActivity : ComponentActivity() {
