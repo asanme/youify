@@ -1,5 +1,5 @@
 package com.asanme.youify.model.classes
 
-data class YoutubeResponse(
+data class YouTubeResponse(
     val items: List<VideoSnippet>
 )

@@ -1,9 +1,11 @@
 package com.asanme.youify.model.api
 
-import com.asanme.youify.model.classes.YoutubeResponse
+import com.asanme.youify.model.classes.AuthTokenResponse
+import com.asanme.youify.model.classes.YouTubeResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 // Interface to make calls using Retrofit
@@ -15,13 +17,12 @@ interface YouTubeAPI {
         @Query("part") part: String,
         @Query("fields") fields: String,
         @Header("Authorization") accessToken: String
-    ): Response<YoutubeResponse>
+    ): Response<YouTubeResponse>
 
-    @GET("/oauth2/v4/token")
+    @POST("/oauth2/v4/token")
     suspend fun refreshToken(
+        @Query("client_id") clientId: String,
         @Query("refresh_token") refreshToken: String,
-        @Query("token_uri") part: String,
-        @Query("fields") fields: String,
-        @Header("Authorization") accessToken: String
-    ): Response<YoutubeResponse>
+        @Query("grant_type") grantType: String = "refresh_token"
+    ): Response<AuthTokenResponse>
 }

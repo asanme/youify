@@ -13,4 +13,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Youify"
-include ':app'
+
+include("app", "core")

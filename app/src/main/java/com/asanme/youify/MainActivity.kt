@@ -48,7 +48,6 @@ private fun App() {
 
     NavHost(
         navController = navController,
-        // TODO Check if keys are valid and working
         startDestination = if (!authViewModel.tokenExists()) {
             Routes.SignInViewRoute.route
         } else {
