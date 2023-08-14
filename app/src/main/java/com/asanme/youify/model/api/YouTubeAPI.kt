@@ -11,11 +11,13 @@ import retrofit2.http.Query
 // Interface to make calls using Retrofit
 interface YouTubeAPI {
     // TODO Add Header with the saved accessToken on SharedPreferences (or pass as parameter)
-    @GET("/youtube/v3/videos")
+    @GET("/youtube/v3/playlistItems")
     suspend fun getPlaylists(
-        @Query("id") videoId: String,
+        @Query("playlistId") playlistId: String,
         @Query("part") part: String,
         @Query("fields") fields: String,
+        @Query("maxResults") maxResults: Int,
+        @Query("videoCategoryId") videoCategoryId: Int,
         @Header("Authorization") accessToken: String
     ): Response<YouTubeResponse>
 

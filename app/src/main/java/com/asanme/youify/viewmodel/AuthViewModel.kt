@@ -52,15 +52,17 @@ class AuthViewModel(
 
     // TODO Handle case for outdated accessToken on the same function
     suspend fun getVideoInfo(
-        videoId: String,
+        playlistId: String,
         part: String,
         fields: String,
+        maxResults: Int,
+        videoCategoryId: Int
     ) = viewModelScope.launch {
         try {
             val accessToken = sharedPreferences.getString("accessToken", null)
             if (accessToken != null) {
                 val header = "Bearer $accessToken"
-                val response = api.getPlaylists(videoId, part, fields, header)
+                val response = api.getPlaylists(playlistId, part, fields, maxResults, videoCategoryId, header)
 
                 if (response.isSuccessful) {
                     handleResponseSuccess(response)
@@ -79,7 +81,9 @@ class AuthViewModel(
     private fun handleResponseSuccess(response: Response<YouTubeResponse>) {
         response.body().let { responseSuccess ->
             responseSuccess?.let {
-                Log.i("YouTubeResponse", it.items[0].snippet.title)
+                for(item in it.items)  {
+                    Log.i("YouTubeResponse", item.snippet.title)
+                }
             }
         }
     }

@@ -45,9 +45,11 @@ fun HomeView(authViewModel: AuthViewModel) {
             onClick = {
                 coroutineScope.launch {
                     authViewModel.getVideoInfo(
-                        videoId = "lJDl4pYWuho",
+                        playlistId = "PLeySRPnY35dFSDPi_4Q5R1VCGL_pab26A",
                         part = "snippet",
-                        fields = "items(snippet(title,categoryId),statistics)"
+                        fields = "pageInfo,nextPageToken,items(snippet(title))",
+                        maxResults = 50,
+                        videoCategoryId = 10
                     )
                 }
             }
