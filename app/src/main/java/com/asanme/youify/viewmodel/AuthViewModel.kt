@@ -62,7 +62,8 @@ class AuthViewModel(
             val accessToken = sharedPreferences.getString("accessToken", null)
             if (accessToken != null) {
                 val header = "Bearer $accessToken"
-                val response = api.getPlaylists(playlistId, part, fields, maxResults, videoCategoryId, header)
+                val response =
+                    api.getPlaylists(playlistId, part, fields, maxResults, videoCategoryId, header)
 
                 if (response.isSuccessful) {
                     handleResponseSuccess(response)
@@ -81,7 +82,7 @@ class AuthViewModel(
     private fun handleResponseSuccess(response: Response<YouTubeResponse>) {
         response.body().let { responseSuccess ->
             responseSuccess?.let {
-                for(item in it.items)  {
+                for (item in it.items) {
                     Log.i("YouTubeResponse", item.snippet.title)
                 }
             }
@@ -120,7 +121,7 @@ class AuthViewModel(
 
                 if (response.isSuccessful) {
                     response.body()?.let { responseSuccess ->
-                        val newAccessToken = responseSuccess.access_token
+                        val newAccessToken = responseSuccess.accessToken
                         Log.i("UpdatingAccessToken", newAccessToken)
 
                         updateEncryptedSharedPreferences(

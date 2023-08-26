@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.asanme.youify"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         manifestPlaceholders["appAuthRedirectScheme"] = "com.asanme.youify"
 
         applicationId = "com.asanme.youify"
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -44,11 +44,11 @@ android {
 }
 
 dependencies {
-    val composeVersion = "1.4.3"
-    val navVersion = "2.6.0"
-    val material3Version = "1.1.1"
+    val composeVersion = "1.5.0"
+    val navVersion = "2.7.1"
+    val material3Version = "1.1.0"
 
-    implementation("androidx.compose.ui:ui:1.4.3")
+    implementation("androidx.compose.ui:ui:1.5.0")
     implementation("androidx.compose.material3:material3:$material3Version")
     implementation("androidx.security:security-crypto:1.0.0")
     implementation("net.openid:appauth:0.11.1")

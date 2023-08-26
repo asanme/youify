@@ -2,10 +2,18 @@ package com.asanme.youify.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,10 +22,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.asanme.youify.R
 import com.asanme.youify.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
+import java.net.URI
 
 @Composable
 fun HomeView(authViewModel: AuthViewModel) {
@@ -27,34 +38,77 @@ fun HomeView(authViewModel: AuthViewModel) {
     }
 
     Column(
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
     ) {
-        TextField(
+        OutlinedTextField(
             value = url,
             onValueChange = { newUrl ->
                 url = newUrl
             },
-            label = {
+            placeholder = {
                 Text(stringResource(id = R.string.enter_url))
-            }
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.playlist_icon),
+                    contentDescription = stringResource(id = R.string.playlist_icon)
+                )
+            },
+            // TODO Add a supportingText error after validating the entered URL
+//            supportingText = {
+//                 Text("Enter a playlist to convert it")
+//            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Button(
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExtendedFloatingActionButton(
             onClick = {
-                coroutineScope.launch {
-                    authViewModel.getVideoInfo(
-                        playlistId = "PLeySRPnY35dFSDPi_4Q5R1VCGL_pab26A",
-                        part = "snippet",
-                        fields = "pageInfo,nextPageToken,items(snippet(title))",
-                        maxResults = 50,
-                        videoCategoryId = 10
-                    )
+                if (isUrlValid(url)) {
+                    val uri = URI(url)
+                    val playlistId = uri.findParameterValue("list")
+                    coroutineScope.launch {
+                        playlistId?.let {
+                            authViewModel.getVideoInfo(
+                                playlistId = it,
+                                part = "snippet",
+                                fields = "pageInfo,nextPageToken,items(snippet(title))",
+                                maxResults = 50,
+                                videoCategoryId = 10
+                            )
+                        }
+                    }
                 }
-            }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
         ) {
-            Text(stringResource(id = R.string.youify_playlist))
+            Icon(
+                painter = painterResource(R.drawable.convert_icon),
+                contentDescription = stringResource(id = R.string.convert_icon)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(stringResource(id = R.string.convert_playlist))
         }
     }
+}
+
+private fun isUrlValid(url: String) = url.replace(" ", "") != ""
+
+private fun URI.findParameterValue(parameterName: String): String? {
+    return rawQuery.split('&').map {
+        val parts = it.split('=')
+        val name = parts.firstOrNull() ?: ""
+        val value = parts.drop(1).firstOrNull() ?: ""
+        Pair(name, value)
+    }.firstOrNull { it.first == parameterName }?.second
 }

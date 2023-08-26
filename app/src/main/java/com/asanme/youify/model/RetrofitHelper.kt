@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitHelper {
-    val googleAuth = "https://www.googleapis.com"
+    private const val googleAuth = "https://www.googleapis.com"
 
     fun getInstance(): Retrofit {
         return Retrofit

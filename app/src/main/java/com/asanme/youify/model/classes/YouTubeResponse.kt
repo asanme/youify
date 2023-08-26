@@ -5,3 +5,12 @@ data class YouTubeResponse(
     val items: List<VideoSnippet>,
     val pageInfo: PageInfo
 )
+
+data class VideoSnippet(
+    val snippet: VideoProperties
+)
+
+data class PageInfo(
+    val totalResults: String,
+    val resultsPerPage: String
+)

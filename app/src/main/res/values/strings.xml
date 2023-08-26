@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">Youify</string>
     <string name="enter_url">Enter your playlist URL</string>
+    <string name="convert_icon">Convert Icon</string>
     <string name="youify_playlist">Youify your playlist</string>
     <string name="google_icon">Google Icon</string>
+    <string name="youify_icon">Youify Icon</string>
+    <string name="playlist_icon">Playlist Icon</string>
+    <string name="convert_playlist">Convert Playlist</string>
 </resources>
