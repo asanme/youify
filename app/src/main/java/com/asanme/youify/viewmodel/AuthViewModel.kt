@@ -7,10 +7,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.asanme.youify.model.api.YouTubeAPI
 import com.asanme.youify.model.classes.PlaylistRequest
+import com.asanme.youify.model.classes.VideoSnippet
 import com.asanme.youify.model.classes.YouTubeResponse
 import com.asanme.youify.model.misc.AppConstants.CLIENT_ID
 import com.asanme.youify.model.misc.HTTPResponseCodes.UNAUTHORIZED_REQUEST
 import com.asanme.youify.model.routes.Routes
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import retrofit2.Response
@@ -20,6 +25,9 @@ class AuthViewModel(
     private val navController: NavHostController,
     private val api: YouTubeAPI
 ) : ViewModel() {
+    private val _userVideos = MutableStateFlow<List<VideoSnippet>>(emptyList())
+    var userVideos = _userVideos.asStateFlow()
+
     fun tokenExists(): Boolean {
         return sharedPreferences.contains("refreshToken")
     }
@@ -73,11 +81,12 @@ class AuthViewModel(
     }
 
     // TODO Handle Response
-    private fun handleResponseSuccess(
+    private suspend fun handleResponseSuccess(
         response: Response<YouTubeResponse>,
     ) {
         response.body().let { responseSuccess ->
             responseSuccess?.let {
+                _userVideos.emit(it.items)
                 for (item in it.items) {
                     Log.i("YouTubeResponse", item.snippet.title)
                 }
