@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
 import com.asanme.youify.R
-import com.asanme.youify.model.misc.APIConstants.CLIENT_ID
-import com.asanme.youify.model.misc.APIConstants.REDIRECT_URI
+import com.asanme.youify.model.misc.AppConstants.CLIENT_ID
+import com.asanme.youify.model.misc.AppConstants.REDIRECT_URI
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration

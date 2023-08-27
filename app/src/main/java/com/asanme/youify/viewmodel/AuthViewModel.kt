@@ -6,11 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.asanme.youify.model.api.YouTubeAPI
+import com.asanme.youify.model.classes.PlaylistRequest
 import com.asanme.youify.model.classes.YouTubeResponse
-import com.asanme.youify.model.misc.APIConstants.CLIENT_ID
+import com.asanme.youify.model.misc.AppConstants.CLIENT_ID
+import com.asanme.youify.model.misc.HTTPResponseCodes.UNAUTHORIZED_REQUEST
 import com.asanme.youify.model.routes.Routes
 import kotlinx.coroutines.launch
-import net.openid.appauth.TokenResponse
 import org.json.JSONObject
 import retrofit2.Response
 
@@ -19,12 +20,6 @@ class AuthViewModel(
     private val navController: NavHostController,
     private val api: YouTubeAPI
 ) : ViewModel() {
-    suspend fun handleAuthResponse(
-        tokenResponse: TokenResponse?
-    ) = viewModelScope.launch {
-        // TODO
-    }
-
     fun tokenExists(): Boolean {
         return sharedPreferences.contains("refreshToken")
     }
@@ -42,33 +37,32 @@ class AuthViewModel(
         navigateTo(Routes.HomeViewRoute)
     }
 
-    fun goBack() {
-        navController.navigateUp()
-    }
-
     private fun navigateTo(route: Routes) {
         navController.navigate(route.route)
     }
 
     // TODO Handle case for outdated accessToken on the same function
     suspend fun getVideoInfo(
-        playlistId: String,
-        part: String,
-        fields: String,
-        maxResults: Int,
-        videoCategoryId: Int
+        playlistRequest: PlaylistRequest
     ) = viewModelScope.launch {
         try {
             val accessToken = sharedPreferences.getString("accessToken", null)
             if (accessToken != null) {
                 val header = "Bearer $accessToken"
                 val response =
-                    api.getPlaylists(playlistId, part, fields, maxResults, videoCategoryId, header)
+                    api.getPlaylists(
+                        playlistRequest.playlistId,
+                        playlistRequest.part,
+                        playlistRequest.fields,
+                        playlistRequest.maxResults,
+                        playlistRequest.videoCategoryId,
+                        header
+                    )
 
                 if (response.isSuccessful) {
                     handleResponseSuccess(response)
                 } else {
-                    handleResponseError(response)
+                    handleResponseError(response, playlistRequest)
                 }
             } else {
                 // Edge Case?
@@ -79,7 +73,9 @@ class AuthViewModel(
     }
 
     // TODO Handle Response
-    private fun handleResponseSuccess(response: Response<YouTubeResponse>) {
+    private fun handleResponseSuccess(
+        response: Response<YouTubeResponse>,
+    ) {
         response.body().let { responseSuccess ->
             responseSuccess?.let {
                 for (item in it.items) {
@@ -89,15 +85,18 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun handleResponseError(response: Response<YouTubeResponse>) {
+    private suspend fun handleResponseError(
+        response: Response<YouTubeResponse>,
+        playlistRequest: PlaylistRequest
+    ) {
         response.errorBody().let { responseError ->
             responseError?.let {
                 try {
                     val error = JSONObject(it.string())
                     val statusCode = error.getJSONObject("error").getInt("code")
                     when (statusCode) {
-                        401 -> {
-                            refreshAccessToken()
+                        UNAUTHORIZED_REQUEST -> {
+                            refreshAccessToken(playlistRequest)
                         }
                     }
 
@@ -109,7 +108,9 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun refreshAccessToken() {
+    private suspend fun refreshAccessToken(
+        playlistRequest: PlaylistRequest
+    ) {
         try {
             val refreshToken = sharedPreferences.getString("refreshToken", "")
 
@@ -122,12 +123,18 @@ class AuthViewModel(
                 if (response.isSuccessful) {
                     response.body()?.let { responseSuccess ->
                         val newAccessToken = responseSuccess.accessToken
-                        Log.i("UpdatingAccessToken", newAccessToken)
+                        // NOTE: Used for testing on Postman
+                        // Log.i("UpdatingAccessToken", newAccessToken)
 
                         updateEncryptedSharedPreferences(
                             refreshToken = refreshToken,
                             accessToken = newAccessToken
                         )
+
+                        Log.i("RefreshAccessToken", "The token was successfully updated")
+
+                        // After an unauthorized request, we create a new one
+                        getVideoInfo(playlistRequest)
                     }
                 } else {
                     response.errorBody().let { responseError ->
@@ -147,4 +154,16 @@ class AuthViewModel(
             Log.e("RefreshAccessTokenException", err.stackTraceToString())
         }
     }
+
+    /*
+    suspend fun handleAuthResponse(
+        tokenResponse: TokenResponse?
+    ) = viewModelScope.launch {
+        // TODO
+    }
+
+    fun goBack() {
+        navController.navigateUp()
+    }
+    */
 }

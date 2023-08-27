@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.asanme.youify.R
+import com.asanme.youify.model.classes.PlaylistRequest
 import com.asanme.youify.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -35,6 +36,10 @@ fun HomeView(authViewModel: AuthViewModel) {
     val coroutineScope = rememberCoroutineScope()
     var url by rememberSaveable {
         mutableStateOf("")
+    }
+
+    var isError by rememberSaveable {
+        mutableStateOf(false)
     }
 
     Column(
@@ -47,6 +52,7 @@ fun HomeView(authViewModel: AuthViewModel) {
         OutlinedTextField(
             value = url,
             onValueChange = { newUrl ->
+                isError = false
                 url = newUrl
             },
             placeholder = {
@@ -58,32 +64,46 @@ fun HomeView(authViewModel: AuthViewModel) {
                     contentDescription = stringResource(id = R.string.playlist_icon)
                 )
             },
-            // TODO Add a supportingText error after validating the entered URL
-//            supportingText = {
-//                 Text("Enter a playlist to convert it")
-//            },
+            supportingText = {
+                if (url.isEmpty()) {
+                    Text("Enter a playlist to convert it")
+                } else if (isError) {
+                    Text("Enter a valid playlist")
+                } else {
+                    Text("")
+                }
+            },
+            isError = isError,
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         ExtendedFloatingActionButton(
             onClick = {
                 if (isUrlValid(url)) {
                     val uri = URI(url)
                     val playlistId = uri.findParameterValue("list")
-                    coroutineScope.launch {
-                        playlistId?.let {
-                            authViewModel.getVideoInfo(
-                                playlistId = it,
-                                part = "snippet",
-                                fields = "pageInfo,nextPageToken,items(snippet(title))",
-                                maxResults = 50,
-                                videoCategoryId = 10
-                            )
+
+                    // An error appears if the entered text / URL doesn't return the playlistId
+                    isError = playlistId == null
+
+                    playlistId?.let {
+                        val playlistRequest = PlaylistRequest(
+                            playlistId = it,
+                            part = "snippet",
+                            fields = "pageInfo,nextPageToken,items(snippet(title))",
+                            maxResults = 50,
+                            videoCategoryId = 10
+                        )
+
+                        coroutineScope.launch {
+                            authViewModel.getVideoInfo(playlistRequest)
                         }
                     }
+                } else {
+                    isError = true
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -105,10 +125,14 @@ fun HomeView(authViewModel: AuthViewModel) {
 private fun isUrlValid(url: String) = url.replace(" ", "") != ""
 
 private fun URI.findParameterValue(parameterName: String): String? {
-    return rawQuery.split('&').map {
-        val parts = it.split('=')
-        val name = parts.firstOrNull() ?: ""
-        val value = parts.drop(1).firstOrNull() ?: ""
-        Pair(name, value)
-    }.firstOrNull { it.first == parameterName }?.second
+    rawQuery?.let { query ->
+        return query.split('&').map {
+            val parts = it.split('=')
+            val name = parts.firstOrNull() ?: ""
+            val value = parts.drop(1).firstOrNull() ?: ""
+            Pair(name, value)
+        }.firstOrNull { it.first == parameterName }?.second
+    }
+
+    return null
 }
