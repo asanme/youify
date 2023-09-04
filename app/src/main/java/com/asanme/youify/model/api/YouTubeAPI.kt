@@ -18,6 +18,7 @@ interface YouTubeAPI {
         @Query("fields") fields: String,
         @Query("maxResults") maxResults: Int,
         @Query("videoCategoryId") videoCategoryId: Int,
+        @Query("pageToken") pageToken: String?,
         @Header("Authorization") accessToken: String
     ): Response<YouTubeResponse>
 

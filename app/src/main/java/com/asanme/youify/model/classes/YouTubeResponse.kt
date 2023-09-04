@@ -11,6 +11,6 @@ data class VideoSnippet(
 )
 
 data class PageInfo(
-    val totalResults: String,
-    val resultsPerPage: String
+    val totalResults: Int,
+    val resultsPerPage: Int
 )

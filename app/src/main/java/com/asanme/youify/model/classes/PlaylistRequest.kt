@@ -5,5 +5,6 @@ data class PlaylistRequest(
     val part: String,
     val fields: String,
     val maxResults: Int,
-    val videoCategoryId: Int
+    val videoCategoryId: Int,
+    val pageToken: String?,
 )

@@ -25,11 +25,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.asanme.youify.R
 import com.asanme.youify.model.classes.PlaylistRequest
+import com.asanme.youify.model.misc.AppConstants.RESULTS_PER_PAGE
+import com.asanme.youify.model.misc.AppConstants.VIDEO_PROPERTIES
 import com.asanme.youify.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -96,12 +100,14 @@ fun HomeView(authViewModel: AuthViewModel) {
                         val playlistRequest = PlaylistRequest(
                             playlistId = it,
                             part = "snippet",
-                            fields = "pageInfo,nextPageToken,items(snippet(title))",
-                            maxResults = 50,
-                            videoCategoryId = 10
+                            fields = VIDEO_PROPERTIES,
+                            maxResults = RESULTS_PER_PAGE,
+                            videoCategoryId = 10,
+                            pageToken = null
                         )
 
                         coroutineScope.launch {
+                            authViewModel.clearVideos()
                             authViewModel.getVideoInfo(playlistRequest)
                         }
                     }
@@ -124,15 +130,40 @@ fun HomeView(authViewModel: AuthViewModel) {
         }
 
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(videos.value) { video ->
+                //TODO Add SwipeToDismiss
                 ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    val maxResUrl = video.snippet.thumbnail?.maxRes?.url
+                    val highUrl = video.snippet.thumbnail?.high?.url
+
+                    if (maxResUrl != null) {
+                        AsyncImage(
+                            model = maxResUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else if (highUrl != null) {
+                        AsyncImage(
+                            model = highUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        AsyncImage(
+                            model = painterResource(id = R.drawable.youify),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Text(
                         video.snippet.title,
                         style = MaterialTheme.typography.displaySmall,

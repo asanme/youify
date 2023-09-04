@@ -12,9 +12,7 @@ import com.asanme.youify.model.classes.YouTubeResponse
 import com.asanme.youify.model.misc.AppConstants.CLIENT_ID
 import com.asanme.youify.model.misc.HTTPResponseCodes.UNAUTHORIZED_REQUEST
 import com.asanme.youify.model.routes.Routes
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -49,6 +47,10 @@ class AuthViewModel(
         navController.navigate(route.route)
     }
 
+    suspend fun clearVideos() {
+        _userVideos.emit(emptyList())
+    }
+
     // TODO Handle case for outdated accessToken on the same function
     suspend fun getVideoInfo(
         playlistRequest: PlaylistRequest
@@ -64,11 +66,12 @@ class AuthViewModel(
                         playlistRequest.fields,
                         playlistRequest.maxResults,
                         playlistRequest.videoCategoryId,
+                        playlistRequest.pageToken,
                         header
                     )
 
                 if (response.isSuccessful) {
-                    handleResponseSuccess(response)
+                    handleResponseSuccess(response, playlistRequest)
                 } else {
                     handleResponseError(response, playlistRequest)
                 }
@@ -80,15 +83,26 @@ class AuthViewModel(
         }
     }
 
-    // TODO Handle Response
     private suspend fun handleResponseSuccess(
         response: Response<YouTubeResponse>,
+        playlistRequest: PlaylistRequest
     ) {
         response.body().let { responseSuccess ->
-            responseSuccess?.let {
-                _userVideos.emit(it.items)
-                for (item in it.items) {
+            responseSuccess?.let { youtubeResponse ->
+                val newList = arrayListOf<VideoSnippet>()
+                newList.addAll(_userVideos.value)
+                newList.addAll(youtubeResponse.items)
+
+                _userVideos.emit(newList)
+                val hasMoreVideos = (youtubeResponse.nextPageToken != null)
+
+                for (item in youtubeResponse.items) {
                     Log.i("YouTubeResponse", item.snippet.title)
+                }
+
+                if (hasMoreVideos) {
+                    val newRequest = playlistRequest.copy(pageToken = youtubeResponse.nextPageToken)
+                    getVideoInfo(newRequest)
                 }
             }
         }
