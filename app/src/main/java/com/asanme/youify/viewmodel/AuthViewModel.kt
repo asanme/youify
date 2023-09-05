@@ -51,6 +51,13 @@ class AuthViewModel(
         _userVideos.emit(emptyList())
     }
 
+    suspend fun removeVideo(video: VideoSnippet) {
+        val updatedVideos = arrayListOf<VideoSnippet>()
+        updatedVideos.addAll(_userVideos.value)
+        updatedVideos.remove(video)
+        _userVideos.emit(updatedVideos)
+    }
+
     // TODO Handle case for outdated accessToken on the same function
     suspend fun getVideoInfo(
         playlistRequest: PlaylistRequest
