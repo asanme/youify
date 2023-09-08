@@ -7,8 +7,11 @@ data class YouTubeResponse(
 )
 
 data class VideoSnippet(
-    val snippet: VideoProperties
-)
+    val snippet: VideoProperties,
+) {
+    var id: String = ""
+}
+
 
 data class PageInfo(
     val totalResults: Int,

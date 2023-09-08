@@ -10,7 +10,6 @@ import retrofit2.http.Query
 
 // Interface to make calls using Retrofit
 interface YouTubeAPI {
-    // TODO Add Header with the saved accessToken on SharedPreferences (or pass as parameter)
     @GET("/youtube/v3/playlistItems")
     suspend fun getPlaylists(
         @Query("playlistId") playlistId: String,

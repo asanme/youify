@@ -2,6 +2,7 @@ package com.asanme.youify.viewmodel
 
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
@@ -18,13 +19,17 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import retrofit2.Response
 
+
+// TODO Remove all suspend functions and instead, create the coroutine inside the ViewModel
+// Docs: https://developer.android.com/kotlin/coroutines/coroutines-best-practices#viewmodel-coroutines
 class AuthViewModel(
     private val sharedPreferences: SharedPreferences,
     private val navController: NavHostController,
     private val api: YouTubeAPI
 ) : ViewModel() {
-    private val _userVideos = MutableStateFlow<List<VideoSnippet>>(emptyList())
-    var userVideos = _userVideos.asStateFlow()
+    private val videoList = mutableStateListOf<VideoSnippet>()
+    private val _videoListFlow = MutableStateFlow(videoList)
+    val videoListFlow = _videoListFlow.asStateFlow()
 
     fun tokenExists(): Boolean {
         return sharedPreferences.contains("refreshToken")
@@ -47,15 +52,12 @@ class AuthViewModel(
         navController.navigate(route.route)
     }
 
-    suspend fun clearVideos() {
-        _userVideos.emit(emptyList())
+    fun clearVideos() {
+        videoList.clear()
     }
 
-    suspend fun removeVideo(video: VideoSnippet) {
-        val updatedVideos = arrayListOf<VideoSnippet>()
-        updatedVideos.addAll(_userVideos.value)
-        updatedVideos.remove(video)
-        _userVideos.emit(updatedVideos)
+    fun removeVideo(video: VideoSnippet) {
+        videoList.remove(video)
     }
 
     // TODO Handle case for outdated accessToken on the same function
@@ -96,11 +98,8 @@ class AuthViewModel(
     ) {
         response.body().let { responseSuccess ->
             responseSuccess?.let { youtubeResponse ->
-                val newList = arrayListOf<VideoSnippet>()
-                newList.addAll(_userVideos.value)
-                newList.addAll(youtubeResponse.items)
-
-                _userVideos.emit(newList)
+//                videoList.addAll(_videoListFlow.value)
+                videoList.addAll(youtubeResponse.items)
                 val hasMoreVideos = (youtubeResponse.nextPageToken != null)
 
                 for (item in youtubeResponse.items) {
