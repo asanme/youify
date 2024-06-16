@@ -61,6 +61,7 @@ class AuthViewModel(
     }
 
     // TODO Handle case for outdated accessToken on the same function
+    // TODO Check if the provided playlist is a mix / radio / stream since the videos are infinte
     suspend fun getVideoInfo(
         playlistRequest: PlaylistRequest
     ) = viewModelScope.launch {

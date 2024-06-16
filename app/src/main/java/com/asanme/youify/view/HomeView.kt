@@ -25,23 +25,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
-import androidx.compose.material3.DismissDirection
-import androidx.compose.material3.DismissState
-import androidx.compose.material3.DismissValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SwipeToDismiss
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDismissState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -230,74 +228,73 @@ private fun LazyItemScope.VideoItem(
     coroutineScope: CoroutineScope,
     authViewModel: AuthViewModel
 ) {
-    val currentItem = rememberUpdatedState(video)
-    val dismissState = rememberDismissState(
+    val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
-            if (it == DismissValue.DismissedToStart) {
-                coroutineScope.launch {
-                    authViewModel.removeVideo(currentItem.value)
+            when (it) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    coroutineScope.launch {
+                        authViewModel.removeVideo(video)
+                    }
                 }
 
-                true
-            } else false
+
+                else -> {
+                    return@rememberSwipeToDismissBoxState false
+                }
+            }
+
+            true
         },
+        positionalThreshold = { it * .25f }
     )
 
-    SwipeToDismiss(
+    SwipeToDismissBox(
+        modifier = Modifier
+            .animateItemPlacement()
+            .clip(RoundedCornerShape(8.dp)),
         state = dismissState,
-        directions = setOf(DismissDirection.EndToStart),
-        modifier = Modifier.animateItemPlacement(),
-        background = {
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
             SwipeBackground(dismissState)
         },
-        dismissContent = {
+        content = {
             VideoItemCard(video)
         }
     )
 }
 
-
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun SwipeBackground(dismissState: DismissState) {
-    val direction = dismissState.dismissDirection ?: return
+private fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
+    val direction = dismissState.dismissDirection
 
-    val color by animateColorAsState(
-        when (dismissState.targetValue) {
-            DismissValue.Default -> Color.LightGray
-            DismissValue.DismissedToEnd -> Color.Red
-            DismissValue.DismissedToStart -> Color.Red
-        },
-        label = "ColorAnimation"
-    )
-
-    val alignment = when (direction) {
-        DismissDirection.StartToEnd -> Alignment.CenterStart
-        DismissDirection.EndToStart -> Alignment.CenterEnd
-    }
-
-    val icon = when (direction) {
-        DismissDirection.StartToEnd -> Icons.Default.Delete
-        DismissDirection.EndToStart -> Icons.Default.Delete
-    }
-
-    val scale by animateFloatAsState(
-        if (dismissState.targetValue == DismissValue.Default) 0.75f else 1f,
-        label = "ScaleIconAnimation"
-    )
-
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(color)
-            .padding(horizontal = 20.dp),
-        contentAlignment = alignment
-    ) {
-        Icon(
-            icon,
-            contentDescription = stringResource(id = R.string.garbage_icon),
-            modifier = Modifier.scale(scale)
+    if (direction.equals(SwipeToDismissBoxValue.EndToStart)) {
+        val color by animateColorAsState(
+            targetValue = when (dismissState.targetValue) {
+                SwipeToDismissBoxValue.Settled -> Color.LightGray
+                SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> Color.Red
+            },
+            label = "ColorAnimation"
         )
+
+        val scale by animateFloatAsState(
+            targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f,
+            label = "ScaleIconAnimation"
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color)
+                .padding(horizontal = 20.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = stringResource(id = R.string.garbage_icon),
+                modifier = Modifier.scale(scale)
+            )
+        }
     }
 }
 
