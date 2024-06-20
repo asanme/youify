@@ -130,6 +130,7 @@ fun SignInView(
     }
 }
 
+// TODO Fix this function (what is this doing here?)
 private fun handleAuthResponse(
     response: ActivityResult,
     authService: AuthorizationService,

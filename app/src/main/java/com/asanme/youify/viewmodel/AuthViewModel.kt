@@ -29,16 +29,24 @@ class AuthViewModel(
 ) : ViewModel() {
     private val videoList = mutableStateListOf<VideoSnippet>()
     private val _videoListFlow = MutableStateFlow(videoList)
+
+    // TODO REMOVE (?)
     val videoListFlow = _videoListFlow.asStateFlow()
 
-    fun tokenExists(): Boolean {
-        return sharedPreferences.contains("refreshToken")
-    }
+    fun tokenExists(): Boolean = sharedPreferences.contains("refreshToken")
 
+    fun clearVideos() = videoList.clear()
+
+    fun removeVideo(video: VideoSnippet) = videoList.remove(video)
+
+    private fun navigateTo(route: Routes) = navController.navigate(route.route)
+
+    // TODO Remove automatic navigation
+    // TODO Check if removing courotine causes freezes
     fun updateEncryptedSharedPreferences(
         refreshToken: String,
         accessToken: String
-    ) = viewModelScope.launch {
+    ) {
         with(sharedPreferences.edit()) {
             putString("refreshToken", refreshToken)
             putString("accessToken", accessToken)
@@ -48,61 +56,48 @@ class AuthViewModel(
         navigateTo(Routes.HomeViewRoute)
     }
 
-    private fun navigateTo(route: Routes) {
-        navController.navigate(route.route)
-    }
-
-    fun clearVideos() {
-        videoList.clear()
-    }
-
-    fun removeVideo(video: VideoSnippet) {
-        videoList.remove(video)
-    }
 
     // TODO Handle case for outdated accessToken on the same function
-    // TODO Check if the provided playlist is a mix / radio / stream since the videos are infinte
-    suspend fun getVideoInfo(
+    // TODO Check if the provided playlist is a mix / radio / stream since the videos are infinite
+    fun getVideoInfo(
         playlistRequest: PlaylistRequest
     ) = viewModelScope.launch {
         try {
-            val accessToken = sharedPreferences.getString("accessToken", null)
-            if (accessToken != null) {
-                val header = "Bearer $accessToken"
-                val response =
-                    api.getPlaylists(
-                        playlistRequest.playlistId,
-                        playlistRequest.part,
-                        playlistRequest.fields,
-                        playlistRequest.maxResults,
-                        playlistRequest.videoCategoryId,
-                        playlistRequest.pageToken,
-                        header
-                    )
+            val accessToken = sharedPreferences.getString("accessToken", null) ?: return@launch
+            val header = "Bearer $accessToken"
+            val response =
+                api.getPlaylists(
+                    playlistRequest.playlistId,
+                    playlistRequest.part,
+                    playlistRequest.fields,
+                    playlistRequest.maxResults,
+                    playlistRequest.videoCategoryId,
+                    playlistRequest.pageToken,
+                    header
+                )
 
-                if (response.isSuccessful) {
-                    handleResponseSuccess(response, playlistRequest)
-                } else {
-                    handleResponseError(response, playlistRequest)
-                }
+            if (response.isSuccessful) {
+                handleResponseSuccess(response, playlistRequest)
             } else {
-                // Edge Case?
+                handleResponseException(response, playlistRequest)
             }
         } catch (err: Exception) {
             Log.e("RetrofitException", err.stackTraceToString())
         }
     }
 
-    private suspend fun handleResponseSuccess(
+
+    // TODO Fix access
+    private fun handleResponseSuccess(
         response: Response<YouTubeResponse>,
         playlistRequest: PlaylistRequest
     ) {
         response.body().let { responseSuccess ->
             responseSuccess?.let { youtubeResponse ->
-//                videoList.addAll(_videoListFlow.value)
                 videoList.addAll(youtubeResponse.items)
                 val hasMoreVideos = (youtubeResponse.nextPageToken != null)
 
+                // Debug only
                 for (item in youtubeResponse.items) {
                     Log.i("YouTubeResponse", item.snippet.title)
                 }
@@ -115,12 +110,13 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun handleResponseError(
+    // TODO Fix access
+    private fun handleResponseException(
         response: Response<YouTubeResponse>,
         playlistRequest: PlaylistRequest
     ) {
-        response.errorBody().let { responseError ->
-            responseError?.let {
+        response.errorBody().let { responseException ->
+            responseException?.let {
                 try {
                     val error = JSONObject(it.string())
                     val statusCode = error.getJSONObject("error").getInt("code")
@@ -130,52 +126,44 @@ class AuthViewModel(
                         }
                     }
 
-                    Log.e("YouTubeError", statusCode.toString())
+                    Log.e("YouTubeException", statusCode.toString())
                 } catch (error: Exception) {
-                    Log.e("DeserializationError", error.stackTraceToString())
+                    Log.e("DeserializationException", error.stackTraceToString())
                 }
             }
         }
     }
 
-    private suspend fun refreshAccessToken(
+    // TODO Fix access
+    private fun refreshAccessToken(
         playlistRequest: PlaylistRequest
-    ) {
+    ) = viewModelScope.launch {
         try {
-            val refreshToken = sharedPreferences.getString("refreshToken", "")
+            // If the refresh token is null it cannot be accessed
+            val refreshToken = sharedPreferences.getString("refreshToken", "") ?: return@launch
+            val response = api.refreshToken(CLIENT_ID, refreshToken)
 
-            if (refreshToken != null) {
-                val response = api.refreshToken(
-                    CLIENT_ID,
-                    refreshToken,
-                )
+            if (response.isSuccessful) {
+                response.body()?.let { responseSuccess ->
+                    val newAccessToken = responseSuccess.accessToken
+                    // NOTE: Used for testing on Postman
+                    // Log.i("UpdatingAccessToken", newAccessToken)
 
-                if (response.isSuccessful) {
-                    response.body()?.let { responseSuccess ->
-                        val newAccessToken = responseSuccess.accessToken
-                        // NOTE: Used for testing on Postman
-                        // Log.i("UpdatingAccessToken", newAccessToken)
+                    updateEncryptedSharedPreferences(refreshToken, newAccessToken)
 
-                        updateEncryptedSharedPreferences(
-                            refreshToken = refreshToken,
-                            accessToken = newAccessToken
-                        )
-
-                        Log.i("RefreshAccessToken", "The token was successfully updated")
-
-                        // After an unauthorized request, we create a new one
-                        getVideoInfo(playlistRequest)
-                    }
-                } else {
-                    response.errorBody().let { responseError ->
-                        responseError?.let {
-                            try {
-                                val error = JSONObject(it.string())
-                                val statusCode = error.getJSONObject("error").getInt("code")
-                                Log.e("YouTubeError", statusCode.toString())
-                            } catch (error: Exception) {
-                                Log.e("DeserializationError", error.stackTraceToString())
-                            }
+                    // After an unauthorized request we make another request
+                    Log.i("RefreshAccessToken", "The token was updated successfully")
+                    getVideoInfo(playlistRequest)
+                }
+            } else {
+                response.errorBody().let { responseException ->
+                    responseException?.let {
+                        try {
+                            val error = JSONObject(it.string())
+                            val statusCode = error.getJSONObject("error").getInt("code")
+                            Log.e("YouTubeException", statusCode.toString())
+                        } catch (error: Exception) {
+                            Log.e("DeserializationException", error.stackTraceToString())
                         }
                     }
                 }
@@ -184,16 +172,4 @@ class AuthViewModel(
             Log.e("RefreshAccessTokenException", err.stackTraceToString())
         }
     }
-
-    /*
-    suspend fun handleAuthResponse(
-        tokenResponse: TokenResponse?
-    ) = viewModelScope.launch {
-        // TODO
-    }
-
-    fun goBack() {
-        navController.navigateUp()
-    }
-    */
 }
