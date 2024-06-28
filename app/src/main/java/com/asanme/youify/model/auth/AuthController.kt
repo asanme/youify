@@ -4,8 +4,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
 import com.asanme.youify.R
-import com.asanme.youify.model.misc.AppConstants.CLIENT_ID
-import com.asanme.youify.model.misc.AppConstants.REDIRECT_URI
+import com.asanme.youify.model.util.AppConstants.CLIENT_ID
+import com.asanme.youify.model.util.AppConstants.REDIRECT_URI
+import com.asanme.youify.model.util.AppConstants.YOUTUBE_API_URL
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration
@@ -17,13 +18,13 @@ import org.json.JSONObject
 class AuthController(
     private val context: Context
 ) {
-    private fun readJsonFile(): String =
+    private fun jsonFile(): String =
         context.resources.openRawResource(R.raw.auth_config).bufferedReader().use { it.readText() }
 
     private fun getAuthorizationRequest(): AuthorizationRequest {
         val serviceConfig = AuthorizationServiceConfiguration(
             AuthorizationServiceDiscovery(
-                JSONObject(readJsonFile())
+                JSONObject(jsonFile())
             )
         )
 
@@ -32,14 +33,11 @@ class AuthController(
             CLIENT_ID,
             ResponseTypeValues.CODE,
             REDIRECT_URI.toUri()
-        ).setScope("https://www.googleapis.com/auth/youtube").build()
+        ).setScope(YOUTUBE_API_URL).build()
     }
 
-    fun getAuthService(): AuthorizationService {
-        return AuthorizationService(context)
-    }
+    fun getAuthService(): AuthorizationService = AuthorizationService(context)
 
-    fun getAuthIntent(authService: AuthorizationService): Intent {
-        return authService.getAuthorizationRequestIntent(getAuthorizationRequest())
-    }
+    fun getAuthIntent(authService: AuthorizationService): Intent =
+        authService.getAuthorizationRequestIntent(getAuthorizationRequest())
 }

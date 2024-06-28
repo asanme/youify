@@ -9,4 +9,5 @@
     <string name="convert_playlist">Convert Playlist</string>
     <string name="hidden_icon">Hidden Video Icon</string>
     <string name="garbage_icon">Garbage Icon</string>
+    <string name="paste_icon">Paste Icon</string>
 </resources>

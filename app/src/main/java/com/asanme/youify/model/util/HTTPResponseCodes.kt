@@ -1,4 +1,4 @@
-package com.asanme.youify.model.misc
+package com.asanme.youify.model.util
 
 // TODO Add more response codes
 object HTTPResponseCodes {

@@ -10,9 +10,9 @@ import com.asanme.youify.model.api.YouTubeAPI
 import com.asanme.youify.model.classes.PlaylistRequest
 import com.asanme.youify.model.classes.VideoSnippet
 import com.asanme.youify.model.classes.YouTubeResponse
-import com.asanme.youify.model.misc.AppConstants.CLIENT_ID
-import com.asanme.youify.model.misc.HTTPResponseCodes.UNAUTHORIZED_REQUEST
 import com.asanme.youify.model.routes.Routes
+import com.asanme.youify.model.util.AppConstants.CLIENT_ID
+import com.asanme.youify.model.util.HTTPResponseCodes.UNAUTHORIZED_REQUEST
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -20,8 +20,6 @@ import org.json.JSONObject
 import retrofit2.Response
 
 
-// TODO Remove all suspend functions and instead, create the coroutine inside the ViewModel
-// Docs: https://developer.android.com/kotlin/coroutines/coroutines-best-practices#viewmodel-coroutines
 class AuthViewModel(
     private val sharedPreferences: SharedPreferences,
     private val navController: NavHostController,
@@ -30,7 +28,6 @@ class AuthViewModel(
     private val videoList = mutableStateListOf<VideoSnippet>()
     private val _videoListFlow = MutableStateFlow(videoList)
 
-    // TODO REMOVE (?)
     val videoListFlow = _videoListFlow.asStateFlow()
 
     fun tokenExists(): Boolean = sharedPreferences.contains("refreshToken")
@@ -42,11 +39,10 @@ class AuthViewModel(
     private fun navigateTo(route: Routes) = navController.navigate(route.route)
 
     // TODO Remove automatic navigation
-    // TODO Check if removing courotine causes freezes
     fun updateEncryptedSharedPreferences(
         refreshToken: String,
         accessToken: String
-    ) {
+    ) = viewModelScope.launch {
         with(sharedPreferences.edit()) {
             putString("refreshToken", refreshToken)
             putString("accessToken", accessToken)
@@ -98,9 +94,11 @@ class AuthViewModel(
                 val hasMoreVideos = (youtubeResponse.nextPageToken != null)
 
                 // Debug only
+                /*
                 for (item in youtubeResponse.items) {
                     Log.i("YouTubeResponse", item.snippet.title)
                 }
+                */
 
                 if (hasMoreVideos) {
                     val newRequest = playlistRequest.copy(pageToken = youtubeResponse.nextPageToken)
@@ -146,14 +144,11 @@ class AuthViewModel(
             if (response.isSuccessful) {
                 response.body()?.let { responseSuccess ->
                     val newAccessToken = responseSuccess.accessToken
-                    // NOTE: Used for testing on Postman
                     // Log.i("UpdatingAccessToken", newAccessToken)
 
                     updateEncryptedSharedPreferences(refreshToken, newAccessToken)
-
-                    // After an unauthorized request we make another request
-                    Log.i("RefreshAccessToken", "The token was updated successfully")
                     getVideoInfo(playlistRequest)
+                    Log.i("RefreshAccessToken", "The token was updated successfully")
                 }
             } else {
                 response.errorBody().let { responseException ->

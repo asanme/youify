@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Divider
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,18 +28,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.asanme.youify.R
-import com.asanme.youify.getSharedPreferences
-import com.asanme.youify.model.RetrofitHelper
-import com.asanme.youify.model.api.YouTubeAPI
 import com.asanme.youify.model.auth.AuthController
 import com.asanme.youify.viewmodel.AuthViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
 
@@ -52,16 +43,13 @@ fun SignInView(
     val authController = AuthController(context)
     val authService by remember { mutableStateOf(authController.getAuthService()) }
     val authIntent by remember { mutableStateOf(authController.getAuthIntent(authService)) }
-    val coroutineScope = rememberCoroutineScope()
 
-    // TODO Implement this inside a ViewModel
     val activityResult = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = { response ->
             handleAuthResponse(
                 response,
                 authService,
-                coroutineScope,
                 authViewModel
             )
         }
@@ -77,18 +65,7 @@ fun SignInView(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.weight(70f)
         ) {
-            Text(
-                "Welcome to Youify!",
-                style = MaterialTheme.typography.headlineLarge,
-                textAlign = TextAlign.Center
-            )
-
-            Icon(
-                painter = painterResource(id = R.drawable.youify),
-                contentDescription = stringResource(id = R.string.youify_icon),
-                tint = Color.Unspecified,
-                modifier = Modifier.size(250.dp)
-            )
+            WelcomeHeader()
         }
 
         Column(
@@ -99,42 +76,63 @@ fun SignInView(
                 .padding(10.dp)
                 .fillMaxWidth()
         ) {
-            Text(
-                "To get started, Log in using your Google account",
-                style = MaterialTheme.typography.displaySmall,
-            )
-
-            Divider(thickness = 1.dp, modifier = Modifier.width(100.dp))
-
-            FilledTonalButton(
-                onClick = {
-                    activityResult.launch(authIntent)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.google_icon),
-                    contentDescription = stringResource(id = R.string.google_icon),
-                    modifier = Modifier.size(18.dp),
-                    tint = Color.Unspecified
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    "Log In with Google",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
+            WelcomeBody(onLogInClicked = { activityResult.launch(authIntent) })
         }
     }
 }
 
-// TODO Fix this function (what is this doing here?)
+@Composable
+private fun WelcomeBody(
+    onLogInClicked: () -> (Unit)
+) {
+    Text(
+        "To get started, Log in using your Google account",
+        style = MaterialTheme.typography.displaySmall,
+    )
+
+    HorizontalDivider(modifier = Modifier.width(100.dp), thickness = 1.dp)
+
+    FilledTonalButton(
+        onClick = onLogInClicked,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.google_icon),
+            contentDescription = stringResource(id = R.string.google_icon),
+            modifier = Modifier.size(18.dp),
+            tint = Color.Unspecified
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            "Log In with Google",
+            style = MaterialTheme.typography.labelSmall
+        )
+    }
+}
+
+@Composable
+private fun WelcomeHeader() {
+    Text(
+        "Welcome to Youify!",
+        style = MaterialTheme.typography.headlineLarge,
+        textAlign = TextAlign.Center
+    )
+
+    Icon(
+        painter = painterResource(id = R.drawable.youify),
+        contentDescription = stringResource(id = R.string.youify_icon),
+        tint = Color.Unspecified,
+        modifier = Modifier.size(250.dp)
+    )
+}
+
+// TODO Move somewhere else (what is this doing here?)
+// TODO Check if the app does not freeze upon calling handleAuthResponse after removing suspend
 private fun handleAuthResponse(
     response: ActivityResult,
     authService: AuthorizationService,
-    coroutineScope: CoroutineScope,
     authViewModel: AuthViewModel
 ) {
     response.data?.let { intent ->
@@ -145,12 +143,10 @@ private fun handleAuthResponse(
                 if (response != null) {
                     response.refreshToken?.let { refreshToken ->
                         response.accessToken?.let { accessToken ->
-                            coroutineScope.launch {
-                                authViewModel.updateEncryptedSharedPreferences(
-                                    refreshToken,
-                                    accessToken
-                                )
-                            }
+                            authViewModel.updateEncryptedSharedPreferences(
+                                refreshToken,
+                                accessToken
+                            )
                         }
                     }
                 } else {
@@ -161,21 +157,4 @@ private fun handleAuthResponse(
             }
         }
     }
-}
-
-@Preview(
-    showSystemUi = true,
-    device = Devices.NEXUS_6
-)
-@Composable
-private fun SignInPreview() {
-    val context = LocalContext.current
-    val authViewModel =
-        AuthViewModel(
-            getSharedPreferences(context),
-            NavHostController(LocalContext.current),
-            RetrofitHelper.getInstance().create(YouTubeAPI::class.java)
-        )
-
-    SignInView(authViewModel)
 }
