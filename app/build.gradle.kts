@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.asanme.youify"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         manifestPlaceholders["appAuthRedirectScheme"] = "com.asanme.youify"
 
         applicationId = "com.asanme.youify"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 

@@ -194,7 +194,7 @@ private fun LazyItemScope.VideoItem(
 
     SwipeToDismissBox(
         modifier = Modifier
-            .animateItemPlacement()
+            .animateItem()
             .clip(RoundedCornerShape(8.dp)),
         state = dismissState,
         enableDismissFromStartToEnd = false,

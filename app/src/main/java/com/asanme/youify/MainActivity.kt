@@ -5,9 +5,16 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,13 +28,21 @@ import com.asanme.youify.view.HomeView
 import com.asanme.youify.view.SignInView
 import com.asanme.youify.viewmodel.AuthViewModel
 
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Disable default fitting to system windows to enable edge-to-edge
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContent {
             YouifyTheme {
-                Surface {
+                // Root surface uses systemBarsPadding to avoid overlaps
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     App()
                 }
             }
@@ -46,20 +61,25 @@ private fun App() {
         api
     )
 
-    NavHost(
-        navController = navController,
-        startDestination = if (!authViewModel.tokenExists()) {
-            Routes.SignInViewRoute.route
-        } else {
-            Routes.HomeViewRoute.route
-        }
-    ) {
-        composable(Routes.SignInViewRoute.route) {
-            SignInView(authViewModel)
-        }
-
-        composable(Routes.HomeViewRoute.route) {
-            HomeView(authViewModel)
+    // Scaffold provides insets-aware paddingValues
+    Scaffold { paddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = if (!authViewModel.tokenExists()) {
+                Routes.SignInViewRoute.route
+            } else {
+                Routes.HomeViewRoute.route
+            },
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
+            composable(Routes.SignInViewRoute.route) {
+                SignInView(authViewModel)
+            }
+            composable(Routes.HomeViewRoute.route) {
+                HomeView(authViewModel)
+            }
         }
     }
 }
